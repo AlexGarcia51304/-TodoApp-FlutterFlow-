@@ -1,10 +1,13 @@
 import '/auth/firebase_auth/auth_util.dart';
+import '/backend/api_requests/api_calls.dart';
 import '/backend/backend.dart';
 import '/components/add_task_widget.dart';
 import '/components/task_widget.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/index.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'tasks_model.dart';
 export 'tasks_model.dart';
@@ -28,6 +31,34 @@ class _TasksWidgetState extends State<TasksWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => TasksModel());
+
+    // On page load action.
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
+      _model.apiResulttzi = await ZenQuotesCall.call();
+
+      if ((_model.apiResulttzi?.succeeded ?? true)) {
+        _model.quote = ZenQuotesCall.quote(
+          (_model.apiResulttzi?.jsonBody ?? ''),
+        )!;
+        _model.author = ZenQuotesCall.author(
+          (_model.apiResulttzi?.jsonBody ?? ''),
+        )!;
+        safeSetState(() {});
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error',
+              style: TextStyle(
+                color: FlutterFlowTheme.of(context).primaryText,
+              ),
+            ),
+            duration: Duration(milliseconds: 4000),
+            backgroundColor: Color(0xFFF2575A),
+          ),
+        );
+      }
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) => safeSetState(() {}));
   }
@@ -156,21 +187,75 @@ class _TasksWidgetState extends State<TasksWidget> {
                       itemBuilder: (context, listViewIndex) {
                         final listViewTasksRecord =
                             listViewTasksRecordList[listViewIndex];
-                        return TaskWidget(
-                          key: Key(
-                              'Keyku7_${listViewIndex}_of_${listViewTasksRecordList.length}'),
-                          tasks: listViewTasksRecord,
-                          checkAction: () async {
-                            await listViewTasksRecord.reference
-                                .update(createTasksRecordData(
-                              completed: true,
-                            ));
+                        return InkWell(
+                          splashColor: Colors.transparent,
+                          focusColor: Colors.transparent,
+                          hoverColor: Colors.transparent,
+                          highlightColor: Colors.transparent,
+                          onTap: () async {
+                            context.pushNamed(
+                              DetailsWidget.routeName,
+                              queryParameters: {
+                                'taskDoc': serializeParam(
+                                  listViewTasksRecord,
+                                  ParamType.Document,
+                                ),
+                              }.withoutNulls,
+                              extra: <String, dynamic>{
+                                'taskDoc': listViewTasksRecord,
+                              },
+                            );
                           },
+                          child: TaskWidget(
+                            key: Key(
+                                'Keyku7_${listViewIndex}_of_${listViewTasksRecordList.length}'),
+                            tasks: listViewTasksRecord,
+                            checkAction: () async {
+                              await listViewTasksRecord.reference
+                                  .update(createTasksRecordData(
+                                completed: true,
+                              ));
+                            },
+                          ),
                         );
                       },
                     );
                   },
                 ),
+              ),
+              Text(
+                valueOrDefault<String>(
+                  _model.quote,
+                  'quote',
+                ),
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      font: GoogleFonts.inter(
+                        fontWeight:
+                            FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      letterSpacing: 0.0,
+                      fontWeight:
+                          FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                      fontStyle: FontStyle.italic,
+                    ),
+              ),
+              Text(
+                valueOrDefault<String>(
+                  _model.author,
+                  'author',
+                ),
+                style: FlutterFlowTheme.of(context).bodyMedium.override(
+                      font: GoogleFonts.inter(
+                        fontWeight:
+                            FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      letterSpacing: 0.0,
+                      fontWeight:
+                          FlutterFlowTheme.of(context).bodyMedium.fontWeight,
+                      fontStyle: FontStyle.italic,
+                    ),
               ),
             ].divide(SizedBox(height: 12.0)),
           ),
